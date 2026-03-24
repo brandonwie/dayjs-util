@@ -1,0 +1,84 @@
+name: Sync upstream and publish to GitHub Packages
+
+# Runs when upstream (brandonwie/dayjs-util) creates a release,
+# detected via scheduled check or manual trigger.
+on:
+  schedule:
+    # Check for new upstream releases daily at 09:00 UTC
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      updated: ${{ steps.check.outputs.updated }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/brandonwie/dayjs-util.git || true
+
+      - name: Fetch and merge upstream
+        id: check
+        run: |
+          git fetch upstream main
+          LOCAL=$(git rev-parse HEAD)
+          UPSTREAM=$(git rev-parse upstream/main)
+          if [ "$LOCAL" != "$UPSTREAM" ]; then
+            git merge upstream/main --no-edit
+            git push origin main
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: sync
+    if: needs.sync.outputs.updated == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://npm.pkg.github.com
+          scope: "@moba-works"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Update package scope for GitHub Packages
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            pkg.name = '@moba-works/dayjs-util';
+            pkg.repository = { type: 'git', url: 'https://github.com/moba-works/dayjs-util.git' };
+            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - run: pnpm build
+
+      - run: pnpm publish --access restricted --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
