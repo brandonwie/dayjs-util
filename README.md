@@ -1,5 +1,7 @@
 # @brandonwie/dayjs-util
 
+**English** | [한국어](./README.ko.md)
+
 Timezone-safe date utility wrapper for [dayjs](https://day.js.org/) — built for calendar applications.
 
 ## Why not just use dayjs directly?
