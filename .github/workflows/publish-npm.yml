@@ -38,6 +38,6 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # OIDC Trusted Publishing — no NODE_AUTH_TOKEN needed.
+      # npm authenticates via GitHub Actions OIDC automatically.
       - run: pnpm publish --access public --no-git-checks --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

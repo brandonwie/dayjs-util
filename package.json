@@ -52,6 +52,10 @@
   ],
   "author": "brandonwie",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brandonwie/dayjs-util.git"
+  },
   "peerDependencies": {
     "dayjs": "^1.11.0"
   },
