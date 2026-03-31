@@ -245,13 +245,16 @@ export class DayjsUtil {
    * @param date1 - First date
    * @param date2 - Second date
    * @param unit - Granularity of comparison (default: millisecond)
+   * @param timezone - Timezone for comparison (null = UTC). Matters when unit is 'day' or larger.
    */
   static isSame(
     date1?: DateInput,
     date2?: DateInput,
     unit?: OpUnitType,
+    timezone?: TimezoneString,
   ): boolean {
-    return dayjs(date1).isSame(date2, unit);
+    const tz = timezone ?? UTC;
+    return dayjs(date1).tz(tz).isSame(dayjs(date2).tz(tz), unit);
   }
 
   /**
@@ -259,10 +262,17 @@ export class DayjsUtil {
    * @param date1 - First date
    * @param date2 - Second date
    * @param unit - Unit for difference (default: millisecond)
+   * @param timezone - Timezone for the calculation (null = UTC). Matters when unit is 'day' or larger.
    * @returns Difference in the specified unit
    */
-  static diff(date1?: DateInput, date2?: DateInput, unit?: OpUnitType): number {
-    return dayjs(date1).diff(date2, unit);
+  static diff(
+    date1?: DateInput,
+    date2?: DateInput,
+    unit?: OpUnitType,
+    timezone?: TimezoneString,
+  ): number {
+    const tz = timezone ?? UTC;
+    return dayjs(date1).tz(tz).diff(dayjs(date2).tz(tz), unit);
   }
 
   // ─── Validation ──────────────────────────────────────────────────
@@ -286,6 +296,7 @@ export class DayjsUtil {
    * @param date1 - First date
    * @param date2 - Second date
    * @param unit - Granularity of comparison (default: millisecond)
+   * @param timezone - Timezone for comparison (null = UTC). Matters when unit is 'day' or larger.
    *
    * @example
    * DayjsUtil.isBefore("2025-06-14", "2025-06-15") // true
@@ -295,8 +306,10 @@ export class DayjsUtil {
     date1?: DateInput,
     date2?: DateInput,
     unit?: OpUnitType,
+    timezone?: TimezoneString,
   ): boolean {
-    return dayjs(date1).isBefore(date2, unit);
+    const tz = timezone ?? UTC;
+    return dayjs(date1).tz(tz).isBefore(dayjs(date2).tz(tz), unit);
   }
 
   /**
@@ -304,13 +317,16 @@ export class DayjsUtil {
    * @param date1 - First date
    * @param date2 - Second date
    * @param unit - Granularity of comparison (default: millisecond)
+   * @param timezone - Timezone for comparison (null = UTC). Matters when unit is 'day' or larger.
    */
   static isAfter(
     date1?: DateInput,
     date2?: DateInput,
     unit?: OpUnitType,
+    timezone?: TimezoneString,
   ): boolean {
-    return dayjs(date1).isAfter(date2, unit);
+    const tz = timezone ?? UTC;
+    return dayjs(date1).tz(tz).isAfter(dayjs(date2).tz(tz), unit);
   }
 
   // ─── General Formatting ─────────────────────────────────────────
@@ -332,6 +348,8 @@ export class DayjsUtil {
     timezone?: TimezoneString,
   ): string {
     const tz = timezone ?? UTC;
+    // NOTE: Uses tz() (convert TO timezone), not tzParse() (parse AS timezone).
+    // For offset-less strings, use DayjsUtil.tzParse() first if needed. This is by design.
     return dayjs(date).tz(tz).format(template);
   }
 
@@ -449,13 +467,16 @@ export class DayjsUtil {
    * @param date1 - First date
    * @param date2 - Second date
    * @param unit - Granularity of comparison (default: millisecond)
+   * @param timezone - Timezone for comparison (null = UTC)
    */
   static isSameOrBefore(
     date1?: DateInput,
     date2?: DateInput,
     unit?: OpUnitType,
+    timezone?: TimezoneString,
   ): boolean {
-    return dayjs(date1).isSameOrBefore(date2, unit);
+    const tz = timezone ?? UTC;
+    return dayjs(date1).tz(tz).isSameOrBefore(dayjs(date2).tz(tz), unit);
   }
 
   /**
@@ -463,13 +484,16 @@ export class DayjsUtil {
    * @param date1 - First date
    * @param date2 - Second date
    * @param unit - Granularity of comparison (default: millisecond)
+   * @param timezone - Timezone for comparison (null = UTC)
    */
   static isSameOrAfter(
     date1?: DateInput,
     date2?: DateInput,
     unit?: OpUnitType,
+    timezone?: TimezoneString,
   ): boolean {
-    return dayjs(date1).isSameOrAfter(date2, unit);
+    const tz = timezone ?? UTC;
+    return dayjs(date1).tz(tz).isSameOrAfter(dayjs(date2).tz(tz), unit);
   }
 
   /**
@@ -479,6 +503,7 @@ export class DayjsUtil {
    * @param end - Range end
    * @param unit - Granularity (null = millisecond)
    * @param inclusivity - Bracket notation: "()" exclusive, "[]" inclusive, "[)" or "(]" mixed
+   * @param timezone - Timezone for comparison (null = UTC)
    *
    * @example
    * // Check if event falls within calendar view range
@@ -490,8 +515,12 @@ export class DayjsUtil {
     end: DateInput,
     unit?: OpUnitType | null,
     inclusivity?: "()" | "[]" | "[)" | "(]",
+    timezone?: TimezoneString,
   ): boolean {
-    return dayjs(date).isBetween(start, end, unit, inclusivity);
+    const tz = timezone ?? UTC;
+    return dayjs(date)
+      .tz(tz)
+      .isBetween(dayjs(start).tz(tz), dayjs(end).tz(tz), unit, inclusivity);
   }
 
   // ─── Boundary Methods (Date return) ─────────────────────────────
@@ -666,27 +695,48 @@ export class DayjsUtil {
    */
   static dayOfWeekString(date: DateInput, timezone?: TimezoneString): RRuleDay {
     const tz = timezone ?? UTC;
-    const dayIndex = dayjs(date).tz(tz).day();
-    return RRULE_DAYS[dayIndex]!;
+    const d = dayjs(date).tz(tz);
+    if (!d.isValid()) {
+      throw new RangeError("Invalid date input for dayOfWeekString");
+    }
+    const day = RRULE_DAYS[d.day()];
+    if (!day) {
+      throw new RangeError("Invalid weekday index");
+    }
+    return day;
   }
 
   /**
    * Calculate remaining whole days between two dates (rounds up partial days).
    *
+   * DST-safe: uses calendar-day arithmetic instead of fixed ms/day.
    * Use case: "Your trial expires in N days" — always rounds up so even
    * 0.1 remaining days shows as 1.
    *
    * @param fromDate - Start date
    * @param toDate - End date
-   * @returns Number of remaining days (ceiling), negative if toDate is in the past
+   * @param timezone - Timezone for day calculation (null = UTC)
+   * @returns Number of remaining days (ceiling away from zero), negative if toDate is in the past
    *
    * @example
    * DayjsUtil.remainingDays("2025-06-15", "2025-06-20") // 5
    * DayjsUtil.remainingDays("2025-06-15", "2025-06-15T01:00:00Z") // 1 (rounds up)
    */
-  static remainingDays(fromDate: DateInput, toDate: DateInput): number {
-    const diffMs = dayjs(toDate).diff(dayjs(fromDate), "millisecond");
-    return Math.ceil(diffMs / 86_400_000);
+  static remainingDays(
+    fromDate: DateInput,
+    toDate: DateInput,
+    timezone?: TimezoneString,
+  ): number {
+    const tz = timezone ?? UTC;
+    const from = dayjs(fromDate).tz(tz);
+    const to = dayjs(toDate).tz(tz);
+    // Use dayjs calendar-day diff (DST-aware, truncates toward zero)
+    const wholeDays = to.diff(from, "day");
+    // Check if there's a partial-day remainder
+    const remainder = to.diff(from.add(wholeDays, "day"), "millisecond");
+    if (remainder > 0) return wholeDays + 1;
+    if (remainder < 0) return wholeDays - 1;
+    return wholeDays;
   }
 }
 

@@ -339,7 +339,8 @@ describe(DayjsUtil.name, () => {
     it("should return false if two dates are in different days (unit: day)", () => {
       const d1 = DayjsUtil.tz("2025-06-15T09:00:00+09:00", "Asia/Seoul");
       const d2 = DayjsUtil.tz("2025-06-16T00:00:00+09:00", "Asia/Seoul");
-      expect(DayjsUtil.isSame(d1, d2, "day")).toBe(false);
+      // In KST these are different days; must pass timezone for correct comparison
+      expect(DayjsUtil.isSame(d1, d2, "day", "Asia/Seoul")).toBe(false);
     });
   });
 
@@ -1152,6 +1153,10 @@ describe(DayjsUtil.name, () => {
         DayjsUtil.dayOfWeekString("2025-06-14T20:00:00Z", "Asia/Seoul"),
       ).toBe("SU");
     });
+
+    it("should throw RangeError for invalid date input", () => {
+      expect(() => DayjsUtil.dayOfWeekString("not-a-date")).toThrow(RangeError);
+    });
   });
 
   // ─── remainingDays ──────────────────────────────────────────────
@@ -1180,6 +1185,13 @@ describe(DayjsUtil.name, () => {
       expect(
         DayjsUtil.remainingDays("2025-06-20T00:00:00Z", "2025-06-15T00:00:00Z"),
       ).toBe(-5);
+    });
+
+    it("should return -1 for sub-day negative intervals", () => {
+      // 1 hour in the past → should be -1, not 0
+      expect(
+        DayjsUtil.remainingDays("2025-06-15T01:00:00Z", "2025-06-15T00:00:00Z"),
+      ).toBe(-1);
     });
 
     it("should round up even for tiny remainders", () => {
