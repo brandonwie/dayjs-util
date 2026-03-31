@@ -883,6 +883,19 @@ describe(DayjsUtil.name, () => {
         ),
       ).toBe(true);
     });
+
+    it("should respect timezone for day comparison", () => {
+      // 2025-06-14T20:00 UTC = 2025-06-15T05:00 KST
+      // In KST, both are June 15 → same day → isSameOrBefore is true
+      expect(
+        DayjsUtil.isSameOrBefore(
+          "2025-06-14T20:00:00Z",
+          "2025-06-15T00:00:00Z",
+          "day",
+          "Asia/Seoul",
+        ),
+      ).toBe(true);
+    });
   });
 
   describe(DayjsUtil.isSameOrAfter.name, () => {
@@ -902,6 +915,19 @@ describe(DayjsUtil.name, () => {
       expect(
         DayjsUtil.isSameOrAfter("2025-06-14T00:00:00Z", "2025-06-15T00:00:00Z"),
       ).toBe(false);
+    });
+
+    it("should respect timezone for day comparison", () => {
+      // 2025-06-15T16:00 UTC = 2025-06-16T01:00 KST
+      // In KST, date1 is June 16 which is after June 15 → true
+      expect(
+        DayjsUtil.isSameOrAfter(
+          "2025-06-15T16:00:00Z",
+          "2025-06-15T00:00:00Z",
+          "day",
+          "Asia/Seoul",
+        ),
+      ).toBe(true);
     });
   });
 
@@ -946,6 +972,21 @@ describe(DayjsUtil.name, () => {
           "2025-06-20T00:00:00Z",
           "day",
           "[]",
+        ),
+      ).toBe(true);
+    });
+
+    it("should respect timezone for day-level range check", () => {
+      // 2025-06-14T20:00 UTC = 2025-06-15T05:00 KST
+      // In KST, this is June 15 — between June 10 and June 20
+      expect(
+        DayjsUtil.isBetween(
+          "2025-06-14T20:00:00Z",
+          "2025-06-15T00:00:00Z",
+          "2025-06-20T00:00:00Z",
+          "day",
+          "[]",
+          "Asia/Seoul",
         ),
       ).toBe(true);
     });
@@ -1037,6 +1078,16 @@ describe(DayjsUtil.name, () => {
       );
       // In KST: source is 00:00, target date is June 20
       expect(result.format("YYYY-MM-DD HH:mm:ss")).toBe("2025-06-20 00:00:00");
+    });
+
+    it("should copy milliseconds correctly", () => {
+      const result = DayjsUtil.copyTime(
+        "2025-06-15T14:30:45.123Z", // source with milliseconds
+        "2025-06-20T00:00:00Z",
+      );
+      expect(result.format("YYYY-MM-DD HH:mm:ss.SSS")).toBe(
+        "2025-06-20 14:30:45.123",
+      );
     });
   });
 

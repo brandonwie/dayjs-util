@@ -502,12 +502,16 @@ export class DayjsUtil {
    * @param start - Range start
    * @param end - Range end
    * @param unit - Granularity (null = millisecond)
-   * @param inclusivity - Bracket notation: "()" exclusive, "[]" inclusive, "[)" or "(]" mixed
+   * @param inclusivity - Bracket notation (default: "()" exclusive on both ends)
    * @param timezone - Timezone for comparison (null = UTC)
    *
    * @example
-   * // Check if event falls within calendar view range
+   * // Check if event falls within calendar view range (inclusive)
    * DayjsUtil.isBetween("2025-06-15", "2025-06-01", "2025-06-30", "day", "[]") // true
+   *
+   * // To set inclusivity without specifying unit, pass null for unit:
+   * DayjsUtil.isBetween("2025-06-15", "2025-06-15", "2025-06-20", null, "[]") // true
+   * DayjsUtil.isBetween("2025-06-15", "2025-06-15", "2025-06-20") // false (default "()" excludes boundaries)
    */
   static isBetween(
     date: DateInput,
@@ -637,15 +641,18 @@ export class DayjsUtil {
   /**
    * Format a duration in milliseconds as a human-readable string.
    *
-   * Negative values are treated as their absolute value.
+   * Negative values are treated as their absolute value — the sign is dropped.
+   * If you need to distinguish positive/negative durations, check the sign
+   * before calling this method.
    *
    * @param milliseconds - Duration in milliseconds (negative = absolute value)
    * @param options - { short: true } for "2h 30min", false for "2 hours 30 minutes"
-   * @returns Formatted duration string
+   * @returns Formatted duration string (always positive)
    *
    * @example
    * DayjsUtil.formatDurationString(9_000_000) // "2h 30min"
    * DayjsUtil.formatDurationString(9_000_000, { short: false }) // "2 hours 30 minutes"
+   * DayjsUtil.formatDurationString(-3_600_000) // "1h" (sign dropped)
    * DayjsUtil.formatDurationString(0) // "0min"
    */
   static formatDurationString(
