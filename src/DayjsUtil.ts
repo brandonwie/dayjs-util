@@ -286,10 +286,14 @@ export class DayjsUtil {
    * @param date1 - First date
    * @param date2 - Second date
    * @param unit - Granularity of comparison (default: millisecond)
+   *
+   * @example
+   * DayjsUtil.isBefore("2025-06-14", "2025-06-15") // true
+   * DayjsUtil.isBefore("2025-06-15T23:00", "2025-06-15T01:00", "day") // false (same day)
    */
   static isBefore(
-    date1: DateInput,
-    date2: DateInput,
+    date1?: DateInput,
+    date2?: DateInput,
     unit?: OpUnitType,
   ): boolean {
     return dayjs(date1).isBefore(date2, unit);
@@ -302,8 +306,8 @@ export class DayjsUtil {
    * @param unit - Granularity of comparison (default: millisecond)
    */
   static isAfter(
-    date1: DateInput,
-    date2: DateInput,
+    date1?: DateInput,
+    date2?: DateInput,
     unit?: OpUnitType,
   ): boolean {
     return dayjs(date1).isAfter(date2, unit);
@@ -313,13 +317,17 @@ export class DayjsUtil {
 
   /**
    * Format a date with a custom template string in the specified timezone.
-   * @param date - Date to format
+   * @param date - Date to format (current time if omitted)
    * @param template - dayjs format template (e.g., "YYYY-MM-DD HH:mm")
    * @param timezone - Timezone for formatting (null = UTC)
    * @returns Formatted string
+   *
+   * @example
+   * DayjsUtil.formatString("2025-06-15T00:00:00Z", "YYYY/MM/DD") // "2025/06/15"
+   * DayjsUtil.formatString("2025-06-15T00:00:00Z", "HH:mm", "Asia/Seoul") // "09:00"
    */
-  static format(
-    date: DateInput,
+  static formatString(
+    date: DateInput | undefined,
     template: string,
     timezone?: TimezoneString,
   ): string {
@@ -339,6 +347,11 @@ export class DayjsUtil {
    * @param unit - Unit to compute start of (day, week, month, year, etc.)
    * @param timezone - Timezone for the boundary (null = UTC)
    * @returns Dayjs at the start of the unit in the specified timezone
+   *
+   * @example
+   * // Get midnight in Seoul (not UTC midnight!)
+   * DayjsUtil.startOf("2025-06-15T02:00:00Z", "day", "Asia/Seoul")
+   * // → 2025-06-15 00:00:00 KST (= 2025-06-14T15:00:00Z)
    */
   static startOf(
     date: DateInput,
@@ -381,6 +394,10 @@ export class DayjsUtil {
    * @param unit - Unit to add (day, month, year, hour, minute, etc.)
    * @param timezone - Timezone for the operation (null = UTC)
    * @returns New Dayjs with time added
+   *
+   * @example
+   * DayjsUtil.add("2025-06-15T09:00:00Z", 3, "day") // June 18, 09:00 UTC
+   * DayjsUtil.add("2025-01-31T00:00:00Z", 1, "month") // Feb 28 (auto-clamp)
    */
   static add(
     date: DateInput,
@@ -434,8 +451,8 @@ export class DayjsUtil {
    * @param unit - Granularity of comparison (default: millisecond)
    */
   static isSameOrBefore(
-    date1: DateInput,
-    date2: DateInput,
+    date1?: DateInput,
+    date2?: DateInput,
     unit?: OpUnitType,
   ): boolean {
     return dayjs(date1).isSameOrBefore(date2, unit);
@@ -448,8 +465,8 @@ export class DayjsUtil {
    * @param unit - Granularity of comparison (default: millisecond)
    */
   static isSameOrAfter(
-    date1: DateInput,
-    date2: DateInput,
+    date1?: DateInput,
+    date2?: DateInput,
     unit?: OpUnitType,
   ): boolean {
     return dayjs(date1).isSameOrAfter(date2, unit);
@@ -462,6 +479,10 @@ export class DayjsUtil {
    * @param end - Range end
    * @param unit - Granularity (null = millisecond)
    * @param inclusivity - Bracket notation: "()" exclusive, "[]" inclusive, "[)" or "(]" mixed
+   *
+   * @example
+   * // Check if event falls within calendar view range
+   * DayjsUtil.isBetween("2025-06-15", "2025-06-01", "2025-06-30", "day", "[]") // true
    */
   static isBetween(
     date: DateInput,
@@ -537,6 +558,11 @@ export class DayjsUtil {
    * @param targetDate - Date to copy time ONTO (keeps its date)
    * @param timezone - Timezone for the operation (null = UTC)
    * @returns Dayjs with targetDate's date and sourceDate's time
+   *
+   * @example
+   * // Drag event from June 15 14:30 to June 20 (keep 14:30)
+   * DayjsUtil.copyTime("2025-06-15T14:30:00Z", "2025-06-20T00:00:00Z")
+   * // → 2025-06-20 14:30:00 UTC
    */
   static copyTime(
     sourceDate: DateInput,
@@ -561,6 +587,10 @@ export class DayjsUtil {
    * @param date - Date to check
    * @param timezone - Timezone for the check (null = UTC)
    * @returns true if the time is exactly midnight
+   *
+   * @example
+   * DayjsUtil.isMidnight("2025-06-15T00:00:00Z") // true
+   * DayjsUtil.isMidnight("2025-06-14T15:00:00Z", "Asia/Seoul") // true (midnight KST)
    */
   static isMidnight(date: DateInput, timezone?: TimezoneString): boolean {
     const tz = timezone ?? UTC;
@@ -577,15 +607,23 @@ export class DayjsUtil {
 
   /**
    * Format a duration in milliseconds as a human-readable string.
-   * @param milliseconds - Duration in milliseconds
+   *
+   * Negative values are treated as their absolute value.
+   *
+   * @param milliseconds - Duration in milliseconds (negative = absolute value)
    * @param options - { short: true } for "2h 30min", false for "2 hours 30 minutes"
    * @returns Formatted duration string
+   *
+   * @example
+   * DayjsUtil.formatDurationString(9_000_000) // "2h 30min"
+   * DayjsUtil.formatDurationString(9_000_000, { short: false }) // "2 hours 30 minutes"
+   * DayjsUtil.formatDurationString(0) // "0min"
    */
   static formatDurationString(
     milliseconds: number,
     options?: { short?: boolean },
   ): string {
-    const dur = dayjs.duration(milliseconds);
+    const dur = dayjs.duration(Math.abs(milliseconds));
     const totalHours = Math.floor(dur.asHours());
     const minutes = dur.minutes();
     const short = options?.short ?? true;
@@ -622,6 +660,9 @@ export class DayjsUtil {
    * @param date - Input date
    * @param timezone - Timezone for day calculation (null = UTC)
    * @returns Two-letter RRULE day code ("SU", "MO", "TU", "WE", "TH", "FR", "SA")
+   *
+   * @example
+   * DayjsUtil.dayOfWeekString("2025-06-16T00:00:00Z") // "MO" (Monday)
    */
   static dayOfWeekString(date: DateInput, timezone?: TimezoneString): RRuleDay {
     const tz = timezone ?? UTC;
@@ -638,6 +679,10 @@ export class DayjsUtil {
    * @param fromDate - Start date
    * @param toDate - End date
    * @returns Number of remaining days (ceiling), negative if toDate is in the past
+   *
+   * @example
+   * DayjsUtil.remainingDays("2025-06-15", "2025-06-20") // 5
+   * DayjsUtil.remainingDays("2025-06-15", "2025-06-15T01:00:00Z") // 1 (rounds up)
    */
   static remainingDays(fromDate: DateInput, toDate: DateInput): number {
     const diffMs = dayjs(toDate).diff(dayjs(fromDate), "millisecond");

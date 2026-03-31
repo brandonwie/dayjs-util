@@ -650,11 +650,11 @@ describe(DayjsUtil.name, () => {
     });
   });
 
-  // ─── format ─────────────────────────────────────────────────────
+  // ─── formatString ────────────────────────────────────────────────
 
-  describe(DayjsUtil.format.name, () => {
+  describe(DayjsUtil.formatString.name, () => {
     it("should format with custom template in UTC", () => {
-      const result = DayjsUtil.format(
+      const result = DayjsUtil.formatString(
         "2025-06-15T00:00:00Z",
         "YYYY/MM/DD HH:mm",
       );
@@ -662,7 +662,7 @@ describe(DayjsUtil.name, () => {
     });
 
     it("should format in specified timezone", () => {
-      const result = DayjsUtil.format(
+      const result = DayjsUtil.formatString(
         "2025-06-15T00:00:00Z",
         "YYYY-MM-DD HH:mm",
         "Asia/Seoul",
@@ -671,7 +671,7 @@ describe(DayjsUtil.name, () => {
     });
 
     it("should handle time-only format", () => {
-      const result = DayjsUtil.format("2025-06-15T15:30:45Z", "hh:mm A");
+      const result = DayjsUtil.formatString("2025-06-15T15:30:45Z", "hh:mm A");
       expect(result).toBe("03:30 PM");
     });
   });
@@ -709,6 +709,26 @@ describe(DayjsUtil.name, () => {
       // In KST, this is June 15 — startOf('day') should give June 15 00:00 KST
       expect(result.format("YYYY-MM-DD HH:mm:ss")).toBe("2025-06-15 00:00:00");
     });
+
+    it("should handle DST spring-forward boundary", () => {
+      // US spring forward March 9, 2025: 2:00 AM → 3:00 AM EDT
+      const result = DayjsUtil.startOf(
+        "2025-03-09T12:00:00-04:00",
+        "day",
+        "America/New_York",
+      );
+      expect(result.format("YYYY-MM-DD HH:mm:ss")).toBe("2025-03-09 00:00:00");
+    });
+
+    it("should handle DST fall-back boundary", () => {
+      // US fall back November 2, 2025: 2:00 AM → 1:00 AM EST
+      const result = DayjsUtil.startOf(
+        "2025-11-02T12:00:00-05:00",
+        "day",
+        "America/New_York",
+      );
+      expect(result.format("YYYY-MM-DD HH:mm:ss")).toBe("2025-11-02 00:00:00");
+    });
   });
 
   describe(DayjsUtil.endOf.name, () => {
@@ -730,6 +750,15 @@ describe(DayjsUtil.name, () => {
       );
       // In KST, this is June 15 09:00 — endOf('day') gives June 15 23:59:59 KST
       expect(result.format("YYYY-MM-DD HH:mm:ss")).toBe("2025-06-15 23:59:59");
+    });
+
+    it("should handle DST spring-forward boundary", () => {
+      const result = DayjsUtil.endOf(
+        "2025-03-09T12:00:00-04:00",
+        "day",
+        "America/New_York",
+      );
+      expect(result.format("YYYY-MM-DD HH:mm:ss")).toBe("2025-03-09 23:59:59");
     });
   });
 
@@ -989,7 +1018,7 @@ describe(DayjsUtil.name, () => {
       expect(result.format("HH:mm:ss")).toBe("08:15:00");
     });
 
-    it("should work with timezone", () => {
+    it("should work with timezone (UTC → KST)", () => {
       const result = DayjsUtil.copyTime(
         "2025-06-15T00:00:00Z", // UTC midnight = KST 09:00
         "2025-06-20T12:00:00Z", // UTC noon = KST 21:00
@@ -997,6 +1026,16 @@ describe(DayjsUtil.name, () => {
       );
       // In KST: source is 09:00, target date is June 20
       expect(result.format("YYYY-MM-DD HH:mm:ss")).toBe("2025-06-20 09:00:00");
+    });
+
+    it("should work with timezone (KST → UTC direction)", () => {
+      const result = DayjsUtil.copyTime(
+        "2025-06-15T15:00:00Z", // UTC 15:00 = KST 00:00 (midnight)
+        "2025-06-20T03:00:00Z", // UTC 03:00 = KST 12:00
+        "Asia/Seoul",
+      );
+      // In KST: source is 00:00, target date is June 20
+      expect(result.format("YYYY-MM-DD HH:mm:ss")).toBe("2025-06-20 00:00:00");
     });
   });
 
@@ -1072,6 +1111,16 @@ describe(DayjsUtil.name, () => {
     it("should handle large durations (>24h)", () => {
       const ms = 26 * 60 * 60 * 1000 + 15 * 60 * 1000; // 26h 15min
       expect(DayjsUtil.formatDurationString(ms)).toBe("26h 15min");
+    });
+
+    it("should handle sub-minute durations as zero", () => {
+      // 30 seconds — not enough for a full minute
+      expect(DayjsUtil.formatDurationString(30_000)).toBe("0min");
+    });
+
+    it("should treat negative durations as absolute value", () => {
+      expect(DayjsUtil.formatDurationString(-60_000)).toBe("1min");
+      expect(DayjsUtil.formatDurationString(-3_600_000)).toBe("1h");
     });
   });
 
