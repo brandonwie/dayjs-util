@@ -676,6 +676,10 @@ if (result) {
 }
 ```
 
+## Contributing
+
+Contributions are welcome! Please read the [Contributing Guide](./CONTRIBUTING.md) before submitting issues or pull requests. We have issue templates for [bug reports](https://github.com/brandonwie/dayjs-util/issues/new?template=bug_report.yml) and [feature requests](https://github.com/brandonwie/dayjs-util/issues/new?template=feature_request.yml) to help you get started.
+
 ## References
 
 - [dayjs](https://day.js.org/) — lightweight date library this package wraps

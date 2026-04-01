@@ -677,6 +677,10 @@ if (result) {
 }
 ```
 
+## 기여하기
+
+기여를 환영합니다! 이슈나 풀 리퀘스트를 제출하기 전에 [기여 가이드](./CONTRIBUTING.md)를 읽어주세요. [버그 리포트](https://github.com/brandonwie/dayjs-util/issues/new?template=bug_report.yml)와 [기능 요청](https://github.com/brandonwie/dayjs-util/issues/new?template=feature_request.yml) 이슈 템플릿을 제공하고 있습니다.
+
 ## 참고 자료
 
 - [dayjs](https://day.js.org/) — 이 패키지가 래핑하는 경량 날짜 라이브러리
