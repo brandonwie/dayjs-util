@@ -10,3 +10,6 @@ docs
 .serena/cache/
 graphify-out/
 .code-review-graph/
+
+# Per-machine symlink to the 3B Codex profile; Codex reads it before AGENTS.md.
+/AGENTS.override.md
