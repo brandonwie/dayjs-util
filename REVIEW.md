@@ -1,7 +1,7 @@
 ---
 tags: [personal, reference]
 created: 2026-10-10
-updated: 2026-10-10
+updated: 2026-11-18
 status: active
 ---
 
@@ -30,13 +30,20 @@ Skip formatting and pure style, personal preference, speculative refactors,
 anything in [Do not flag](#do-not-flag), and restating what the diff does.
 
 For each finding give `path:line`, the failure (input and timezone, then the
-wrong result) and a suggested fix. Tag a severity:
+wrong result) and a suggested fix. Assign a priority using the scale below.
 
-| Severity | Meaning                                                                     |
-| -------- | --------------------------------------------------------------------------- |
-| P0       | Wrong dates for all consumers, a broken published package, or a secret leak |
-| P1       | Wrong output a consumer will hit, or an unflagged breaking change           |
-| P2       | Edge case, or a risk to the next change                                     |
+| Priority | Severity | Meaning |
+| -------- | -------- | ------- |
+| P1 | Critical | Immediate action required, such as when the published package is unusable. Security holes, leaked secrets, and data loss or corruption are always P1, regardless of diff size. |
+| P2 | High | A major feature or service is degraded, such as event normalization returning the wrong result for common inputs. |
+| P3 | Medium | Limited impact, such as incorrect formatting for an uncommon timezone and input combination. |
+| P4 | Low | Minor inconvenience or a standard request with low operational impact, such as unclear wording or a minor documentation mismatch. |
+| P5 | Trivial / planning / informational | No immediate functional or operational impact. Keep it in the backlog for future planning or spare capacity. |
+
+P1–P3 findings block the merge. Fix them and review the new head, with no round
+cap. The PR is mergeable once a review of the current head finds no P1–P3
+findings. P4 and P5 findings do not block merging and go into one fix-forward
+issue per PR.
 
 If nothing meets the bar, say so in one line rather than padding the review.
 
